@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Намаз">
+<title>Намаз Трекер</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    min-height: 100vh;
+    background: linear-gradient(160deg, #0a1520 0%, #1a2a3a 60%, #0a1520 100%);
+    font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+    color: #e8dcc8;
+    overscroll-behavior: none;
+  }
+  button { font-family: inherit; }
+  .header { padding: 48px 20px 20px; text-align: center; border-bottom: 1px solid rgba(212,175,97,0.12); }
+  .header .moon { font-size: 26px; color: #d4af61; letter-spacing: 4px; margin-bottom: 4px; }
+  .header h1 { font-size: 20px; font-weight: 700; letter-spacing: 3px; color: #e8dcc8; }
+  .header p { font-size: 11px; color: #8a9bb0; letter-spacing: 2px; margin-top: 3px; }
+  .stats-pill { display: inline-flex; gap: 16px; margin-top: 14px; background: rgba(212,175,97,0.08); border: 1px solid rgba(212,175,97,0.15); border-radius: 40px; padding: 7px 20px; }
+  .stats-pill span { font-size: 12px; color: #8a9bb0; }
+  .stats-pill .val { color: #d4af61; font-weight: 700; }
+  .stats-divider { width: 1px; background: rgba(212,175,97,0.2); }
+  .date-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .nav-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(212,175,97,0.2); background: rgba(212,175,97,0.06); color: #d4af61; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .date-btn { flex: 1; margin: 0 12px; background: rgba(212,175,97,0.08); border: 1px solid rgba(212,175,97,0.25); border-radius: 14px; padding: 10px 16px; cursor: pointer; text-align: center; }
+  .date-btn .date-main { font-size: 15px; font-weight: 700; color: #d4af61; }
+  .date-btn .date-sub { font-size: 12px; color: #8a9bb0; margin-top: 2px; }
+  .edit-icon { font-size: 10px; color: #d4af61; opacity: 0.7; margin-left: 6px; }
+  .content { padding: 16px 16px 40px; }
+  .kaza-label { text-align: center; margin-bottom: 12px; font-size: 12px; color: #b8942e; letter-spacing: 1px; }
+  .future-label { text-align: center; margin-bottom: 12px; font-size: 12px; color: #5a8a6a; letter-spacing: 1px; }
+  .prayer-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(212,175,97,0.3); border-radius: 18px; overflow: hidden; }
+  .prayer-card.past { border-color: rgba(255,255,255,0.08); }
+  .prayer-card.future { border-color: rgba(90,138,106,0.3); }
+  .card-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .card-weekday { font-size: 13px; color: #8a9bb0; text-transform: capitalize; }
+  .card-count { font-size: 22px; font-weight: 700; color: #556070; }
+  .card-count.some { color: #d4af61; }
+  .card-count.all { color: #4caf80; }
+  .progress-bar { height: 3px; background: rgba(255,255,255,0.05); }
+  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; background: linear-gradient(90deg, #b8942e, #d4af61); }
+  .progress-fill.all { background: #4caf80; }
+  .prayers-grid { display: grid; grid-template-columns: repeat(5, 1fr); }
+  .prayer-btn { background: transparent; border: none; border-right: 1px solid rgba(255,255,255,0.05); padding: 16px 4px 14px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 9px; transition: background 0.2s; }
+  .prayer-btn:last-child { border-right: none; }
+  .prayer-btn.done { background: rgba(212,175,97,0.12); }
+  .check-circle { width: 38px; height: 38px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.1); background: transparent; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-size: 18px; color: #1a2a3a; font-weight: 900; }
+  .check-circle.done { border-color: #d4af61; background: #d4af61; box-shadow: 0 0 12px rgba(212,175,97,0.4); }
+  .prayer-name { font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; color: #556070; font-weight: 400; }
+  .prayer-name.done { color: #d4af61; font-weight: 600; }
+  .prayer-time { font-size: 10px; color: #2e3f50; }
+  .quick-days { margin-top: 20px; }
+  .quick-label { font-size: 11px; color: #556070; letter-spacing: 1px; margin-bottom: 10px; text-align: center; }
+  .quick-grid { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .quick-day { display: flex; flex-direction: column; align-items: center; padding: 8px 10px; border-radius: 10px; cursor: pointer; border: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.02); min-width: 38px; }
+  .quick-day.selected { border-color: #d4af61; background: rgba(212,175,97,0.12); }
+  .quick-day .wd { font-size: 10px; color: #556070; margin-bottom: 4px; }
+  .quick-day .dd { font-size: 12px; font-weight: 600; color: #c8bfa8; }
+  .quick-day.selected .dd { color: #d4af61; }
+  .dots { display: flex; gap: 2px; margin-top: 5px; }
+  .dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.1); }
+  .dot.done { background: #d4af61; }
+  .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.7); display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-sheet { width: 100%; max-width: 480px; background: #111c27; border-radius: 20px 20px 0 0; padding: 20px 16px 44px; border: 1px solid rgba(212,175,97,0.2); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.25,0.8,0.25,1); }
+  .modal-overlay.open .modal-sheet { transform: translateY(0); }
+  .modal-handle { width: 40px; height: 4px; border-radius: 2px; background: rgba(212,175,97,0.3); margin: 0 auto 16px; }
+  .modal-title { font-size: 13px; color: #8a9bb0; letter-spacing: 1px; text-align: center; margin-bottom: 16px; }
+  .drums { display: flex; justify-content: center; align-items: center; gap: 4px; }
+  .drum-wrap { position: relative; overflow: hidden; cursor: grab; user-select: none; touch-action: none; }
+  .drum-gradient { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(to bottom, #111c27 0%, transparent 35%, transparent 65%, #111c27 100%); }
+  .drum-highlight { position: absolute; left: 0; right: 0; z-index: 1; pointer-events: none; background: rgba(212,175,97,0.1); border-top: 1px solid rgba(212,175,97,0.3); border-bottom: 1px solid rgba(212,175,97,0.3); }
+  .drum-track { position: relative; z-index: 0; will-change: transform; }
+  .drum-item { display: flex; align-items: center; justify-content: center; font-size: 14px; color: #8a9bb0; cursor: pointer; }
+  .drum-item.selected { font-size: 16px; font-weight: 700; color: #d4af61; }
+  .confirm-btn { margin-top: 20px; width: 100%; padding: 14px; border-radius: 12px; border: none; background: linear-gradient(135deg, #d4af61, #b8942e); color: #1a2a3a; font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="moon">☽</div>
+  <h1>НАМАЗ</h1>
+  <p>ТРЕКЕР МОЛИТВ</p>
+  <div class="stats-pill">
+    <span>Всего: <span class="val" id="stat-total">0</span></span>
+    <div class="stats-divider"></div>
+    <span>Дней: <span class="val" id="stat-days">0</span></span>
+    <div class="stats-divider"></div>
+    <span>Сегодня: <span class="val" id="stat-today">0</span>/5</span>
+  </div>
+</div>
+<div class="date-nav">
+  <button class="nav-btn" id="btn-prev">&#8249;</button>
+  <button class="date-btn" id="btn-date">
+    <div class="date-main" id="date-main">Сегодня</div>
+    <div class="date-sub" id="date-sub"></div>
+  </button>
+  <button class="nav-btn" id="btn-next">&#8250;</button>
+</div>
+<div class="content">
+  <div class="kaza-label" id="kaza-label" style="display:none">📿 КАЗА — восполнение пропущенных молитв</div>
+  <div class="future-label" id="future-label" style="display:none">🌙 Будущий намаз — можно отметить заранее</div>
+  <div class="prayer-card" id="prayer-card">
+    <div class="card-header">
+      <div class="card-weekday" id="card-weekday"></div>
+      <div class="card-count" id="card-count">0/5</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="prayers-grid" id="prayers-grid"></div>
+  </div>
+  <div class="quick-days">
+    <div class="quick-label">НЕДАВНИЕ ДНИ</div>
+    <div class="quick-grid" id="quick-grid"></div>
+  </div>
+</div>
+<div class="modal-overlay" id="modal">
+  <div class="modal-sheet" id="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">ВЫБЕРИТЕ ДАТУ</div>
+    <div class="drums">
+      <div class="drum-wrap" id="drum-day" style="width:60px;height:220px"></div>
+      <div class="drum-wrap" id="drum-month" style="width:130px;height:220px"></div>
+      <div class="drum-wrap" id="drum-year" style="width:80px;height:220px"></div>
+    </div>
+    <button class="confirm-btn" id="btn-confirm">ВЫБРАТЬ</button>
+  </div>
+</div>
+<script>
+const PRAYERS = ["Фаджр","Зухр","Аср","Магриб","Иша"];
+const PRAYER_TIMES = {"Фаджр":"05:00","Зухр":"13:00","Аср":"16:30","Магриб":"20:00","Иша":"21:30"};
+const MONTHS_RU = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+const MONTHS_GEN = ["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+const WEEKDAYS = ["воскресенье","понедельник","вторник","среда","четверг","пятница","суббота"];
+const WEEKDAYS_SHORT = ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"];
+const STORAGE_KEY = "namaz-tracker-data";
+const ITEM_H = 44;
+function parseParts(s) { const [y,m,d] = s.split('-').map(Number); return {y,m,d}; }
+function toStr(y,m,d) { return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+function todayStr() { const n=new Date(); return toStr(n.getFullYear(),n.getMonth()+1,n.getDate()); }
+function daysInMonth(y,m) { return new Date(y,m,0).getDate(); }
+function getWeekday(y,m,d) { return new Date(y,m-1,d).getDay(); }
+function addDay(ds,delta) { const dt=new Date(ds+'T12:00:00'); dt.setDate(dt.getDate()+delta); return toStr(dt.getFullYear(),dt.getMonth()+1,dt.getDate()); }
+let data={};
+try{const s=localStorage.getItem('namaz-tracker-data');if(s)data=JSON.parse(s);}catch{}
+let selectedDate=todayStr();
+function save(){try{localStorage.setItem('namaz-tracker-data',JSON.stringify(data));}catch{}}
+function countDay(ds){return PRAYERS.filter(p=>data[ds]?.[p]).length;}
+function makeDrum(el,items,initIdx,onChange){
+  let selIdx=Math.max(0,Math.min(initIdx,items.length-1));
+  let startY=null,startIdx=null,dragging=false;
+  const h=ITEM_H*5;
+  el.innerHTML=`<div class="drum-gradient"></div><div class="drum-highlight" style="top:${h/2-ITEM_H/2}px;height:${ITEM_H}px"></div><div class="drum-track"></div>`;
+  const track=el.querySelector('.drum-track');
+  function render(offset){
+    track.style.transform=`translateY(${-selIdx*ITEM_H+h/2-ITEM_H/2+(offset||0)}px)`;
+    track.style.transition=dragging?'none':'transform 0.2s cubic-bezier(0.25,0.8,0.25,1)';
+    track.querySelectorAll('.drum-item').forEach((div,i)=>{
+      const dist=Math.abs(i-selIdx);
+      div.style.opacity=dist===0?1:dist===1?0.6:0.25;
+      div.classList.toggle('selected',i===selIdx);
+    });
+  }
+  function buildItems(){
+    track.innerHTML=items.map((item,i)=>`<div class="drum-item" data-i="${i}" style="height:${ITEM_H}px">${item}</div>`).join('');
+    track.querySelectorAll('.drum-item').forEach(div=>{div.addEventListener('click',()=>{selIdx=+div.dataset.i;render(0);onChange(selIdx);});});
+    render(0);
+  }
+  function clamp(v){return Math.max(0,Math.min(items.length-1,v));}
+  el.addEventListener('pointerdown',e=>{dragging=true;startY=e.clientY;startIdx=selIdx;el.setPointerCapture(e.pointerId);e.preventDefault();});
+  el.addEventListener('pointermove',e=>{if(!dragging)return;render(e.clientY-startY);e.preventDefault();});
+  el.addEventListener('pointerup',e=>{if(!dragging)return;dragging=false;selIdx=clamp(startIdx-Math.round((e.clientY-startY)/ITEM_H));render(0);onChange(selIdx);e.preventDefault();});
+  buildItems();
+  return{
+    setItems(ni,idx){items=ni;selIdx=Math.max(0,Math.min(idx,items.length-1));buildItems();},
+    setIndex(i){selIdx=clamp(i);render(0);},
+    getIndex(){return selIdx;},
+    getItems(){return[...items];}
+  };
+}
+function renderPrayers(){
+  const ds=selectedDate,today=todayStr(),isToday=ds===today,isPast=ds<today,isFuture=ds>today;
+  const{y,m,d}=parseParts(ds),wd=getWeekday(y,m,d),count=countDay(ds);
+  const dateMain=document.getElementById('date-main');
+  dateMain.textContent=isToday?'Сегодня':(WEEKDAYS[wd][0].toUpperCase()+WEEKDAYS[wd].slice(1));
+  dateMain.style.color=isFuture?'#5a8a6a':'#d4af61';
+  document.getElementById('date-sub').innerHTML=`${d} ${MONTHS_GEN[m-1]} ${y} <span class="edit-icon">✎</span>`;
+  document.getElementById('kaza-label').style.display=isPast?'block':'none';
+  document.getElementById('future-label').style.display=isFuture?'block':'none';
+  document.getElementById('prayer-card').className='prayer-card'+(isToday?'':isPast?' past':' future');
+  document.getElementById('card-weekday').textContent=WEEKDAYS[wd][0].toUpperCase()+WEEKDAYS[wd].slice(1);
+  const countEl=document.getElementById('card-count');
+  countEl.textContent=count+'/5'+(count===5?' ✓':'');
+  countEl.className='card-count'+(count===5?' all':count>0?' some':'');
+  const fill=document.getElementById('progress-fill');
+  fill.style.width=(count/5*100)+'%';
+  fill.className='progress-fill'+(count===5?' all':'');
+  const grid=document.getElementById('prayers-grid');
+  grid.innerHTML='';
+  PRAYERS.forEach(prayer=>{
+    const done=!!(data[ds]?.[prayer]);
+    const btn=document.createElement('button');
+    btn.className='prayer-btn'+(done?' done':'');
+    btn.innerHTML=`<div class="check-circle ${done?'done':''}">${done?'✓':''}</div><span class="prayer-name ${done?'done':''}">${prayer}</span><span class="prayer-time">${PRAYER_TIMES[prayer]}</span>`;
+    btn.addEventListener('click',()=>{if(!data[ds])data[ds]={};data[ds][prayer]=!data[ds][prayer];save();renderAll();});
+    grid.appendChild(btn);
+  });
+  const allDays=Object.keys(data);
+  document.getElementById('stat-total').textContent=allDays.reduce((s,d)=>s+countDay(d),0);
+  document.getElementById('stat-days').textContent=allDays.length;
+  document.getElementById('stat-today').textContent=countDay(today);
+}
+function renderQuick(){
+  const grid=document.getElementById('quick-grid');
+  grid.innerHTML='';
+  for(let i=3;i>=-3;i--){
+    const ds=addDay(todayStr(),-i);
+    const{y,m,d}=parseParts(ds),wd=getWeekday(y,m,d);
+    const div=document.createElement('div');
+    div.className='quick-day'+(ds===selectedDate?' selected':'');
+    div.innerHTML=`<span class="wd">${WEEKDAYS_SHORT[wd]}</span><span class="dd">${d}</span><div class="dots">${PRAYERS.map(p=>`<div class="dot ${data[ds]?.[p]?'done':''}"></div>`).join('')}</div>`;
+    div.addEventListener('click',()=>{selectedDate=ds;renderAll();});
+    grid.appendChild(div);
+  }
+}
+function renderAll(){renderPrayers();renderQuick();}
+document.getElementById('btn-prev').addEventListener('click',()=>{selectedDate=addDay(selectedDate,-1);renderAll();});
+document.getElementById('btn-next').addEventListener('click',()=>{selectedDate=addDay(selectedDate,+1);renderAll();});
+let drumDay,drumMonth,drumYear;
+const years=[];
+for(let y=2017;y<=2100;y++)years.push(String(y));
+function syncDayList(){
+  const y=parseInt(years[drumYear.getIndex()]),m=drumMonth.getIndex()+1,dim=daysInMonth(y,m);
+  drumDay.setItems(Array.from({length:dim},(_,i)=>String(i+1).padStart(2,'0')),Math.min(drumDay.getIndex(),dim-1));
+}
+function openModal(){
+  const{y,m,d}=parseParts(selectedDate);
+  const dim=daysInMonth(y,m);
+  const days=Array.from({length:dim},(_,i)=>String(i+1).padStart(2,'0'));
+  document.getElementById('modal').classList.add('open');
+  if(!drumDay){
+    drumDay=makeDrum(document.getElementById('drum-day'),days,d-1,()=>syncDayList());
+    drumMonth=makeDrum(document.getElementById('drum-month'),MONTHS_RU,m-1,()=>syncDayList());
+    drumYear=makeDrum(document.getElementById('drum-year'),years,years.indexOf(String(y)),()=>syncDayList());
+  }else{
+    drumYear.setIndex(years.indexOf(String(y)));
+    drumMonth.setIndex(m-1);
+    drumDay.setItems(days,d-1);
+  }
+}
+document.getElementById('btn-date').addEventListener('click',openModal);
+document.getElementById('modal').addEventListener('click',e=>{if(e.target===document.getElementById('modal'))document.getElementById('modal').classList.remove('open');});
+document.getElementById('btn-confirm').addEventListener('click',()=>{
+  const y=years[drumYear.getIndex()],m=String(drumMonth.getIndex()+1).padStart(2,'0'),day=drumDay.getItems()[drumDay.getIndex()];
+  selectedDate=`${y}-${m}-${day}`;
+  document.getElementById('modal').classList.remove('open');
+  renderAll();
+});
+renderAll();
+</script>
+</body>
+</html>
